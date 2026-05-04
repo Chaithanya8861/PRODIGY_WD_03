@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>✨ Tic-Tac-Toe: Arcane Duel | Modern UI + AI Mode</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(145deg, #0b1120 0%, #111827 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', 'Inter', sans-serif;
+      padding: 1.5rem;
+    }
+
+    /* main game container */
+    .game-container {
+      background: rgba(18, 25, 45, 0.65);
+      backdrop-filter: blur(2px);
+      border-radius: 3.5rem;
+      padding: 2rem 2rem 2.2rem;
+      box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      transition: all 0.3s ease;
+    }
+
+    /* header & status */
+    .status-area {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .game-title {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #E0E7FF, #A78BFA);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      letter-spacing: -0.01em;
+      text-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-card {
+      background: #0f172ad9;
+      backdrop-filter: blur(8px);
+      padding: 0.8rem 1.6rem;
+      border-radius: 80px;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 12px;
+      border: 1px solid rgba(167, 139, 250, 0.4);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+
+    .turn-indicator {
+      font-weight: 600;
+      font-size: 1.3rem;
+      color: #F0F3FA;
+      letter-spacing: 0.5px;
+    }
+
+    .turn-badge {
+      background: #2d3a5e;
+      padding: 6px 18px;
+      border-radius: 40px;
+      font-weight: 700;
+      font-size: 1.2rem;
+      color: #FACC15;
+      box-shadow: inset 0 1px 2px #ffffff1a, 0 4px 8px #00000030;
+      transition: 0.2s;
+    }
+
+    /* mode selector */
+    .mode-selector {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .mode-btn {
+      background: #1e293b;
+      border: none;
+      padding: 0.6rem 1.5rem;
+      border-radius: 2rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #cbd5e6;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      font-family: inherit;
+      backdrop-filter: blur(4px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .mode-btn.active {
+      background: linear-gradient(95deg, #8b5cf6, #6366f1);
+      color: white;
+      box-shadow: 0 6px 14px #8b5cf670;
+      border: 1px solid #c4b5fd;
+    }
+
+    .mode-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* game board grid */
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      background-color: rgba(0, 0, 0, 0.3);
+      padding: 1rem;
+      border-radius: 2.5rem;
+      margin-bottom: 1.8rem;
+    }
+
+    .cell {
+      aspect-ratio: 1 / 1;
+      background: radial-gradient(circle at 30% 20%, #1e293b, #0f1722);
+      border-radius: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      font-weight: 800;
+      font-family: 'Segoe UI', 'Poppins', system-ui;
+      cursor: pointer;
+      transition: all 0.2s ease-out;
+      box-shadow: 0 12px 18px -6px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      color: white;
+      text-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      transform: scale(1);
+    }
+
+    .cell:hover:not(.disabled-cell) {
+      transform: scale(1.02);
+      background: radial-gradient(circle at 30% 20%, #2d3b5a, #1e2a44);
+      box-shadow: 0 8px 18px rgba(139, 92, 246, 0.4);
+    }
+
+    .cell.X-move {
+      color: #facc15;
+      text-shadow: 0 0 6px #ffb347, 0 0 2px #ff9100;
+    }
+
+    .cell.O-move {
+      color: #38bdf8;
+      text-shadow: 0 0 8px #0ea5e9;
+    }
+
+    .disabled-cell {
+      cursor: default;
+      filter: brightness(0.95);
+    }
+
+    /* animation for placed moves */
+    @keyframes popIn {
+      0% { transform: scale(0.2); opacity: 0; }
+      80% { transform: scale(1.1); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .cell span {
+      display: inline-block;
+      animation: popIn 0.25s cubic-bezier(0.34, 1.2, 0.64, 1);
+    }
+
+    /* reset & action buttons */
+    .action-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 1.2rem;
+      margin-top: 0.5rem;
+    }
+
+    .btn-reset, .btn-reset-ai {
+      background: #111827cc;
+      border: 1px solid #475569;
+      padding: 0.7rem 1.8rem;
+      border-radius: 3rem;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #e2e8f0;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      backdrop-filter: blur(4px);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-reset:hover, .btn-reset-ai:hover {
+      background: #334155;
+      transform: translateY(-2px);
+      border-color: #a78bfa;
+      box-shadow: 0 5px 12px #00000030;
+    }
+
+    .winner-msg {
+      text-align: center;
+      margin-top: 1.2rem;
+      font-weight: 600;
+      background: linear-gradient(120deg, #1e1b4b, #2e1065);
+      width: fit-content;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 0.5rem 1.5rem;
+      border-radius: 60px;
+      font-size: 0.9rem;
+      color: #fde047;
+      letter-spacing: 0.3px;
+    }
+
+    @media (max-width: 520px) {
+      .game-container {
+        padding: 1.2rem;
+      }
+      .board {
+        gap: 0.7rem;
+      }
+      .cell {
+        font-size: 2.8rem;
+        border-radius: 1.2rem;
+      }
+      .turn-badge {
+        font-size: 1rem;
+        padding: 4px 12px;
+      }
+      .mode-btn {
+        padding: 0.4rem 1rem;
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="game-container">
+  <div class="status-area">
+    <div class="game-title">
+      🎭 TIC–TAC–TOE ✨
+    </div>
+    <div class="status-card">
+      <span class="turn-indicator">⚡ Current turn</span>
+      <div class="turn-badge" id="turnBadge">X</div>
+    </div>
+  </div>
+
+  <div class="mode-selector">
+    <button class="mode-btn" id="twoPlayerModeBtn">👥 2-Player</button>
+    <button class="mode-btn" id="aiModeBtn">🤖 vs AI (Easy/Medium)</button>
+  </div>
+
+  <div class="board" id="board">
+    <!-- 9 cells dynamically generated in js -->
+  </div>
+
+  <div class="action-buttons">
+    <button class="btn-reset" id="resetGameBtn">🔄 New Game</button>
+    <button class="btn-reset-ai" id="forceResetBtn">✨ Full Restart</button>
+  </div>
+  <div id="winnerMessage" class="winner-msg"></div>
+</div>
+
+<script>
+  // ---------- GAME STATE ----------
+  let board = Array(9).fill(null);       // null, 'X', 'O'
+  let currentPlayer = 'X';               // X always starts
+  let gameActive = true;
+  let gameMode = "twoPlayer";            // "twoPlayer" or "ai"
+  let winnerInfo = null;                 // { winner: 'X' or 'O' or 'tie', line: index[]? optional }
+  
+  // DOM elements
+  const boardContainer = document.getElementById('board');
+  const turnBadge = document.getElementById('turnBadge');
+  const winnerMessageDiv = document.getElementById('winnerMessage');
+  const twoPlayerBtn = document.getElementById('twoPlayerModeBtn');
+  const aiModeBtn = document.getElementById('aiModeBtn');
+  const resetBtn = document.getElementById('resetGameBtn');
+  const fullResetBtn = document.getElementById('forceResetBtn');
+  
+  // helper: winning combinations (8 lines)
+  const winPatterns = [
+    [0,1,2], [3,4,5], [6,7,8],  // rows
+    [0,3,6], [1,4,7], [2,5,8],  // cols
+    [0,4,8], [2,4,6]            // diags
+  ];
+  
+  // ---------- UTILITIES ----------
+  function checkWinner(boardState) {
+    for (let pattern of winPatterns) {
+      const [a,b,c] = pattern;
+      if (boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c]) {
+        return { winner: boardState[a], line: pattern };
+      }
+    }
+    if (boardState.every(cell => cell !== null)) return { winner: 'tie', line: null };
+    return null;
+  }
+  
+  // update UI highlights (simple message & turn)
+  function updateUIAfterMove() {
+    // update turn badge
+    if (gameActive) {
+      turnBadge.innerText = currentPlayer;
+      turnBadge.style.color = currentPlayer === 'X' ? '#FACC15' : '#38BDF8';
+    } else {
+      if (winnerInfo) {
+        if (winnerInfo.winner === 'tie') turnBadge.innerText = '🏁 Tie';
+        else turnBadge.innerText = `${winnerInfo.winner} Wins! 🎉`;
+      } else {
+        turnBadge.innerText = gameActive ? currentPlayer : '--';
+      }
+    }
+    
+    // update winner message
+    if (!gameActive && winnerInfo) {
+      if (winnerInfo.winner === 'tie') {
+        winnerMessageDiv.innerText = "🤝 It's a Draw! Great Battle 🎭";
+      } else {
+        winnerMessageDiv.innerHTML = `🏆 <strong>${winnerInfo.winner}</strong> claimed victory! ✨`;
+      }
+    } else if (gameActive) {
+      winnerMessageDiv.innerHTML = "";
+    } else {
+      winnerMessageDiv.innerHTML = "";
+    }
+  }
+  
+  // render board from state with animations
+  function renderBoard() {
+    const cells = document.querySelectorAll('.cell');
+    for (let i = 0; i < cells.length; i++) {
+      const cell = cells[i];
+      const mark = board[i];
+      // clear inner content but keep structure
+      cell.innerHTML = '';
+      if (mark) {
+        const span = document.createElement('span');
+        span.innerText = mark;
+        cell.appendChild(span);
+        if (mark === 'X') cell.classList.add('X-move');
+        else cell.classList.add('O-move');
+      } else {
+        cell.classList.remove('X-move', 'O-move');
+      }
+      // disable styling if game not active or cell filled or game winner exists
+      if (!gameActive || board[i] !== null || winnerInfo !== null) {
+        cell.classList.add('disabled-cell');
+      } else {
+        cell.classList.remove('disabled-cell');
+      }
+    }
+    updateUIAfterMove();
+  }
+  
+  // reset game (keep mode, board fresh)
+  function resetGameBoard() {
+    board = Array(9).fill(null);
+    currentPlayer = 'X';
+    gameActive = true;
+    winnerInfo = null;
+    renderBoard();
+    // if AI mode and currentPlayer is 'O'? but always X starts, so AI will move only if mode AI and currentPlayer === 'O' after start.
+    // since X starts, if AI mode && currentPlayer is O we need to trigger AI move after reset (if AI plays as O).
+    if (gameMode === 'ai' && currentPlayer === 'O') {
+      // but default X starts, so after reset it's X's turn, nothing.
+    }
+    // additionally after reset if AI goes second we wait for human action
+  }
+  
+  // handle game over (winner set)
+  function endGame(winnerObj) {
+    gameActive = false;
+    winnerInfo = winnerObj;
+    renderBoard();
+  }
+  
+  // process move at index
+  function makeMove(index, playerSymbol) {
+    if (!gameActive) return false;
+    if (board[index] !== null) return false;
+    if (playerSymbol !== currentPlayer) return false;
+    
+    // apply move
+    board[index] = playerSymbol;
+    renderBoard();
+    
+    // check win condition
+    const winCheck = checkWinner(board);
+    if (winCheck) {
+      if (winCheck.winner !== 'tie') {
+        endGame(winCheck);
+      } else {
+        // tie game
+        endGame({ winner: 'tie', line: null });
+      }
+      return true;
+    }
+    
+    // switch player
+    currentPlayer = (currentPlayer === 'X') ? 'O' : 'X';
+    renderBoard();
+    return true;
+  }
+  
+  // ---------- AI Decision (smart but with human-like randomness, intermediate level) ----------
+  // AI: Medium strength - first tries winning move, then blocking opponent's win, then prefer center/corners.
+  function getAIMove() {
+    // 1) Immediate win move for AI (currentPlayer is O in vs AI mode)
+    for (let i = 0; i < 9; i++) {
+      if (board[i] === null) {
+        const tempBoard = [...board];
+        tempBoard[i] = currentPlayer;
+        if (checkWinner(tempBoard) && checkWinner(tempBoard).winner === currentPlayer) {
+          return i;
+        }
+      }
+    }
+    // 2) Block human (X) winning move
+    const opponent = currentPlayer === 'X' ? 'O' : 'X'; // AI is currentPlayer, human opponent = other
+    for (let i = 0; i < 9; i++) {
+      if (board[i] === null) {
+        const tempBoard = [...board];
+        tempBoard[i] = opponent;
+        if (checkWinner(tempBoard) && checkWinner(tempBoard).winner === opponent) {
+          return i;
+        }
+      }
+    }
+    // 3) Prefer center (4)
+    if (board[4] === null) return 4;
+    // 4) Prefer corners
+    const corners = [0,2,6,8];
+    const availableCorners = corners.filter(c => board[c] === null);
+    if (availableCorners.length > 0) {
+      return availableCorners[Math.floor(Math.random() * availableCorners.length)];
+    }
+    // 5) any random edge
+    const edges = [1,3,5,7];
+    const availableEdges = edges.filter(e => board[e] === null);
+    if (availableEdges.length) return availableEdges[Math.floor(Math.random() * availableEdges.length)];
+    // fallback: first empty
+    return board.findIndex(cell => cell === null);
+  }
+  
+  async function aiMoveAsync() {
+    if (!gameActive) return;
+    if (gameMode !== 'ai') return;
+    if (currentPlayer !== 'O') return;   // ai always plays as 'O' (second player)
+    // small delay to mimic thinking & smooth animation
+    await new Promise(resolve => setTimeout(resolve, 220));
+    if (!gameActive) return;
+    if (currentPlayer !== 'O') return;   // re-check after delay
+    const aiIndex = getAIMove();
+    if (aiIndex !== -1 && board[aiIndex] === null && gameActive && currentPlayer === 'O') {
+      makeMove(aiIndex, 'O');
+    }
+  }
+  
+  // whenever move ends in AI mode and game still active, trigger AI if currentPlayer O
+  function afterMoveTriggerAI() {
+    if (gameMode === 'ai' && gameActive && currentPlayer === 'O') {
+      aiMoveAsync();
+    }
+  }
+  
+  // human move handler with mode support
+  function handleCellClick(index) {
+    if (!gameActive) return;
+    // in AI mode, humans always control X, AI controls O. If not X's turn, deny click
+    if (gameMode === 'ai' && currentPlayer !== 'X') return;
+    if (board[index] !== null) return;
+    
+    const success = makeMove(index, currentPlayer);
+    if (success) {
+      // after move, check if game ended, if not and AI mode + currentPlayer O -> AI
+      if (gameActive && gameMode === 'ai' && currentPlayer === 'O') {
+        afterMoveTriggerAI();
+      }
+    }
+  }
+  
+  // change game mode
+  function setGameMode(mode) {
+    gameMode = mode;
+    // reset whole game with fresh state
+    resetGameBoard();
+    // active & turn X always
+    gameActive = true;
+    winnerInfo = null;
+    currentPlayer = 'X';
+    board = Array(9).fill(null);
+    renderBoard();
+    
+    // Update UI active buttons
+    if (mode === 'twoPlayer') {
+      twoPlayerBtn.classList.add('active');
+      aiModeBtn.classList.remove('active');
+    } else {
+      aiModeBtn.classList.add('active');
+      twoPlayerBtn.classList.remove('active');
+    }
+    
+    // If AI mode, after reset human always starts (X). if no move, wait. but if somehow (rare) AI turn? X starts so fine.
+    // Also, in any case extra protection call render.
+  }
+  
+  // full reset (same as reset)
+  function fullGameReset() {
+    resetGameBoard();
+    gameActive = true;
+    winnerInfo = null;
+    currentPlayer = 'X';
+    board = Array(9).fill(null);
+    renderBoard();
+  }
+  
+  // ----- build dynamic board with event listeners -----
+  function createBoardUI() {
+    boardContainer.innerHTML = '';
+    for (let i = 0; i < 9; i++) {
+      const cellDiv = document.createElement('div');
+      cellDiv.classList.add('cell');
+      cellDiv.dataset.index = i;
+      cellDiv.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = parseInt(cellDiv.dataset.index);
+        handleCellClick(idx);
+      });
+      boardContainer.appendChild(cellDiv);
+    }
+    renderBoard();
+  }
+  
+  // ----- initialization and event listeners -----
+  function init() {
+    createBoardUI();
+    twoPlayerBtn.addEventListener('click', () => setGameMode('twoPlayer'));
+    aiModeBtn.addEventListener('click', () => setGameMode('ai'));
+    resetBtn.addEventListener('click', () => {
+      if (gameMode === 'ai') {
+        resetGameBoard();
+        gameActive = true;
+        winnerInfo = null;
+        currentPlayer = 'X';
+        board = Array(9).fill(null);
+        renderBoard();
+      } else {
+        resetGameBoard();
+        gameActive = true;
+        winnerInfo = null;
+        currentPlayer = 'X';
+        board = Array(9).fill(null);
+        renderBoard();
+      }
+    });
+    fullResetBtn.addEventListener('click', () => {
+      fullGameReset();
+    });
+    // default mode twoPlayer active
+    setGameMode('twoPlayer');
+  }
+  
+  init();
+</script>
+</body>
+</html>
