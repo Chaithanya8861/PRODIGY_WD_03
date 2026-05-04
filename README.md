@@ -12,7 +12,7 @@
 
 ## 🌐 Live Demo
 
-> 🚀 **Play the game live here:** [https://yourusername.github.io/tic-tac-toe-prodigy-task03](https://yourusername.github.io/tic-tac-toe-prodigy-task03)
+> 🚀 **Play the game live here:** [https://yourusername.github.io/tic-tac-toe-prodigy-task03](https://chaithanya8861.github.io/PRODIGY_WD_03/)
 
 *(Replace the above link with your actual GitHub Pages URL after deployment)*
 
